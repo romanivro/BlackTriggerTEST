@@ -25,7 +25,7 @@
     .modal.show { display: block; }
     .person-card { display: flex; align-items: center; margin: 5px 0; }
     .person-card span { margin: 0 5px; }
-    .connection { color: #00ff00; font-size: 0.8em; }
+    .connection { color: #00ff00; font-size: 0.8em; margin: 5px 0; }
   </style>
 </head>
 <body>
@@ -80,11 +80,11 @@
       </div>
       <div class="module-content">
         <button onclick="openPersonModal()">Добавить человека</button>
+        <button onclick="openConnectionModal()">Добавить связь</button>
         <div id="people-list"></div>
         <div id="connections"></div>
       </div>
     </div>
-
 
     <!-- Финансы -->
     <div class="module collapsed" id="finance-module">
@@ -164,7 +164,7 @@
       </div>
     </div>
 
-    <!-- Настройки -->
+ <!-- Настройки -->
     <div class="module collapsed" id="settings-module">
       <div class="module-header" onclick="toggleModule('settings-module')">
         <h2>⚙️ Настройки</h2><span>▼</span>
@@ -222,6 +222,20 @@
         <button onclick="closeModal('person-modal')">Закрыть</button>
       </div>
     </template>
+    <template id="connection-modal-template">
+      <div class="modal-content">
+        <h2>Добавить связь</h2>
+        <select id="conn-from">
+          <option value="">Выберите первого</option>
+        </select>
+        <select id="conn-to">
+          <option value="">Выберите второго</option>
+        </select>
+        <input type="number" id="conn-strength" placeholder="Сила связи (1-10)" min="1" max="10">
+        <button onclick="addConnection()">Добавить</button>
+        <button onclick="closeModal('connection-modal')">Закрыть</button>
+      </div>
+    </template>
     <template id="knowledge-modal-template">
       <div class="modal-content">
         <h2>Добавить заметку</h2>
@@ -265,6 +279,14 @@
       modal.className = 'modal';
       modal.innerHTML = document.getElementById(templateId).innerHTML;
       document.body.appendChild(modal);
+      if (modalId === 'connection-modal') {
+        const fromSelect = modal.querySelector('#conn-from');
+        const toSelect = modal.querySelector('#conn-to');
+        people.forEach((person, index) => {
+          fromSelect.add(new Option(person.name, index));
+          toSelect.add(new Option(person.name, index));
+        });
+      }
       modal.classList.add('show');
     }
 
@@ -283,7 +305,8 @@
         notes: localStorage.getItem('notes'),
         knowledge: localStorage.getItem('knowledge'),
         archetype: localStorage.getItem('archetype'),
-        strategies: localStorage.getItem('strategies')
+        strategies: localStorage.getItem('strategies'),
+        connections: localStorage.getItem('connections')
       };
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -323,7 +346,7 @@
       'Каждое взаимодействие — война за интересы.'
     ];
 
-function updateRule() {
+    function updateRule() {
       const today = new Date().toDateString();
       if (!currentRule.date || currentRule.date !== today) {
         const rule = customRules.length > 0 && Math.random() > 0.5
@@ -367,7 +390,7 @@ function updateRule() {
       }
     }
 
-    // План на День
+// План на День
     let plans = JSON.parse(localStorage.getItem('plans') || '[]');
 
     function renderPlans() {
@@ -425,7 +448,7 @@ function updateRule() {
       connections.forEach(conn => {
         const div = document.createElement('div');
         div.className = 'connection';
-        div.textContent = `${conn.from} ↔ ${conn.to} (Сила: ${conn.strength})`;
+        div.textContent = `${people[conn.from].name} ↔ ${people[conn.to].name} (Сила: ${conn.strength})`;
         connectionsDiv.appendChild(div);
       });
     }
@@ -460,7 +483,25 @@ function updateRule() {
       renderPeople();
     }
 
-// Финансы
+    function openConnectionModal() {
+      openModal('connection-modal-template', 'connection-modal');
+    }
+
+    function addConnection() {
+      const from = parseInt(document.getElementById('conn-from').value);
+      const to = parseInt(document.getElementById('conn-to').value);
+      const strength = parseInt(document.getElementById('conn-strength').value) || 1;
+      if (from !== to && from >= 0 && to >= 0 && strength >= 1 && strength <= 10) {
+        connections.push({ from, to, strength });
+        localStorage.setItem('connections', JSON.stringify(connections));
+        renderConnections();
+        closeModal('connection-modal');
+      } else {
+        alert('Выберите разных людей и укажите силу связи (1-10)');
+      }
+    }
+
+    // Финансы
     let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
 
     function renderTransactions() {
@@ -604,7 +645,7 @@ function updateRule() {
       renderKnowledge();
     }
 
-    // Архетипы
+// Архетипы
     let archetype = JSON.parse(localStorage.getItem('archetype') || '{}');
     const archetypes = { predator: 'Хищник', strategist: 'Стратег', provocateur: 'Провокатор' };
 
@@ -627,7 +668,7 @@ function updateRule() {
       document.getElementById('analytics-results').textContent = `Задачи: ${totalPlans}, Транзакции: ${totalTransactions}`;
     }
 
-// Настройки
+    // Настройки
     function applyState() {
       const state = document.getElementById('state-select').value;
       localStorage.setItem('userState', state);
