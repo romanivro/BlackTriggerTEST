@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BlackTrigger HQ Новый тест - 23.07.2025</title>
+  <style>
+    body { margin: 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; font-family: Arial, sans-serif; }
+    .container { max-width: 600px; margin: 0 auto; }
+    button { background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px; margin: 5px 0; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    #result { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Тест BlackTrigger HQ - Новая версия 23.07.2025</h1>
+    <p>Если видишь этот текст, значит новая версия загрузилась!</p>
+    <button onclick="testFunction()">Нажми меня</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function testFunction() {
+      document.getElementById('result').textContent = 'Кнопка работает! ' + new Date().toLocaleString();
+      localStorage.setItem('test', 'Успех - 23.07.2025');
+    }
+
+    window.onload = function() {
+      const testValue = localStorage.getItem('test');
+      if (testValue) {
+        document.getElementById('result').textContent = 'Страница загрузилась! Последний тест: ' + testValue;
+      } else {
+        document.getElementById('result').textContent = 'Страница загрузилась, но тест ещё не выполнен. Дата: 23.07.2025';
+      }
+    };
+  </script>
+</body>
+</html>
