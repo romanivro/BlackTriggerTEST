@@ -3,37 +3,195 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BlackTrigger HQ Новый тест - 23.07.2025</title>
+  <title>BlackTrigger HQ - 23.07.2025</title>
   <style>
     body { margin: 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; font-family: Arial, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; }
+    .module { border: 1px solid #444; margin: 10px 0; border-radius: 5px; }
+    .module-header { padding: 10px; background: #333; cursor: pointer; }
+    .module-content { padding: 10px; display: none; }
+    .module.always-open .module-content { display: block; }
     button { background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px; margin: 5px 0; cursor: pointer; }
     button:hover { background: #0056b3; }
-    #result { margin-top: 10px; }
+    input { background: #333; color: #e0e0e0; border: 1px solid #444; padding: 5px; border-radius: 5px; width: 100%; margin: 5px 0; }
+    .error { color: #ff5555; margin: 5px 0; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Тест BlackTrigger HQ - Новая версия 23.07.2025</h1>
-    <p>Если видишь этот текст, значит новая версия загрузилась!</p>
-    <button onclick="testFunction()">Нажми меня</button>
-    <div id="result"></div>
+    <!-- Правило День -->
+    <div class="module always-open" id="rule-module">
+      <div class="module-header">
+        <h2>📜 Правило День</h2>
+      </div>
+      <div class="module-content">
+        <div id="rule-text"></div>
+        <button onclick="adhereRule()">Придержался</button>
+        <button onclick="violateRule()">Нарушил</button>
+        <input type="text" id="custom-rule" placeholder="Добавить своё правило">
+        <button onclick="addCustomRule()">Добавить</button>
+        <div class="error" id="rule-error"></div>
+      </div>
+    </div>
+
+    <!-- Окружение -->
+    <div class="module collapsed" id="environment-module">
+      <div class="module-header" onclick="toggleModule('environment-module')">
+        <h2>👥 Окружение</h2>
+      </div>
+      <div class="module-content">
+        <button onclick="openPersonModal()">Добавить человека</button>
+        <div id="people-list"></div>
+      </div>
+    </div>
   </div>
 
   <script>
-    function testFunction() {
-      document.getElementById('result').textContent = 'Кнопка работает! ' + new Date().toLocaleString();
-      localStorage.setItem('test', 'Успех - 23.07.2025');
+    // Утилиты
+    function toggleModule(moduleId) {
+      const module = document.getElementById(moduleId);
+      module.classList.toggle('collapsed');
     }
 
-    window.onload = function() {
-      const testValue = localStorage.getItem('test');
-      if (testValue) {
-        document.getElementById('result').textContent = 'Страница загрузилась! Последний тест: ' + testValue;
-      } else {
-        document.getElementById('result').textContent = 'Страница загрузилась, но тест ещё не выполнен. Дата: 23.07.2025';
+    function showError(moduleId, message) {
+      document.getElementById(`${moduleId}-error`).textContent = message;
+    }
+
+    function openModal(templateId, modalId) {
+      const modal = document.createElement('div');
+      modal.id = modalId;
+      modal.className = 'modal';
+      modal.innerHTML = document.getElementById(templateId).innerHTML;
+      document.body.appendChild(modal);
+      modal.classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.remove();
+    }
+
+    // Правило День
+    let currentRule = JSON.parse(localStorage.getItem('currentRule') || '{}');
+    let customRules = JSON.parse(localStorage.getItem('customRules') || '[]');
+    const defaultRules = [
+      'Не оправдывайся — объяснение без запроса — слабость.',
+      'Если не приносит ресурс — отсекай.',
+      'Хищник молчит чаще, чем говорит.',
+      'Контроль над собой — контроль над всем.',
+      'Каждое взаимодействие — война за интересы.'
+    ];
+
+    function updateRule() {
+      const today = new Date().toDateString();
+      if (!currentRule.date || currentRule.date !== today) {
+        const rule = customRules.length > 0 && Math.random() > 0.5
+          ? customRules[Math.floor(Math.random() * customRules.length)]
+          : defaultRules[Math.floor(Math.random() * defaultRules.length)];
+        currentRule = { text: rule, adhered: 0, violated: 0, date: today };
+        localStorage.setItem('currentRule', JSON.stringify(currentRule));
       }
-    };
+      document.getElementById('rule-text').textContent = `${currentRule.text || 'Правило не выбрано'} (Соблюдено: ${currentRule.adhered || 0}, Нарушено: ${currentRule.violated || 0})`;
+    }
+
+    function adhereRule() {
+      if (currentRule.text) {
+        currentRule.adhered = (currentRule.adhered || 0) + 1;
+        localStorage.setItem('currentRule', JSON.stringify(currentRule));
+        updateRule();
+      } else {
+        showError('rule', 'Сначала выберите правило');
+      }
+    }
+
+    function violateRule() {
+      if (currentRule.text) {
+        currentRule.violated = (currentRule.violated || 0) + 1;
+        localStorage.setItem('currentRule', JSON.stringify(currentRule));
+        updateRule();
+      } else {
+        showError('rule', 'Сначала выберите правило');
+      }
+    }
+
+    function addCustomRule() {
+      const rule = document.getElementById('custom-rule').value.trim();
+      if (rule) {
+        customRules.push(rule);
+        localStorage.setItem('customRules', JSON.stringify(customRules));
+        document.getElementById('custom-rule').value = '';
+        updateRule();
+      } else {
+        showError('rule', 'Введите правило');
+      }
+    }
+
+    // Окружение
+    let people = JSON.parse(localStorage.getItem('people') || '[]');
+
+    function renderPeople() {
+      const peopleList = document.getElementById('people-list');
+      peopleList.innerHTML = '';
+      people.forEach((person, index) => {
+        const div = document.createElement('div');
+        div.innerHTML = `${person.name} (${person.status}) [${person.tags.join(', ')}] Карма: ${person.karma} <button onclick="deletePerson(${index})">❌</button>`;
+        peopleList.appendChild(div);
+      });
+    }
+
+    function openPersonModal() {
+      const modal = document.createElement('div');
+      modal.id = 'person-modal';
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h2>Добавить человека</h2>
+          <input type="text" id="person-name" placeholder="Имя">
+          <select id="person-status">
+            <option value="loyal">🟢 Лояльный</option>
+            <option value="neutral">🟡 Нейтрал</option>
+            <option value="hostile">🔴 Враг</option>
+            <option value="contract">✍️ Контракт</option>
+          </select>
+          <input type="text" id="person-tags" placeholder="Метки (через запятую)">
+          <button onclick="addPerson()">Добавить</button>
+          <button onclick="closeModal('person-modal')">Закрыть</button>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.classList.add('show');
+    }
+
+    function addPerson() {
+      const name = document.getElementById('person-name').value.trim();
+      const status = document.getElementById('person-status').value;
+      const tagsInput = document.getElementById('person-tags').value.trim();
+      const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+      if (name) {
+        people.push({ name, status, tags, karma: 0 });
+        localStorage.setItem('people', JSON.stringify(people));
+        document.getElementById('person-name').value = '';
+        document.getElementById('person-status').value = 'neutral';
+        document.getElementById('person-tags').value = '';
+        renderPeople();
+        closeModal('person-modal');
+      } else {
+        alert('Введите имя');
+      }
+    }
+
+    function deletePerson(index) {
+      people.splice(index, 1);
+      localStorage.setItem('people', JSON.stringify(people));
+      renderPeople();
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+      updateRule();
+      renderPeople();
+    });
   </script>
 </body>
 </html>
