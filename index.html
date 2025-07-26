@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BlackTrigger HQ - 23.07.2025</title>
+  <title>BlackTrigger HQ - 26.07.2025</title>
   <style>
     body { margin: 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; font-family: 'Arial', sans-serif; }
     .container { max-width: 600px; margin: 0 auto; }
@@ -28,6 +28,7 @@
     .person-card span { margin: 0 5px; }
     .connection { color: #00ff00; font-size: 0.9em; margin: 5px 0; }
     .archetype-question { margin: 10px 0; }
+    canvas { width: 100%; height: 200px; background: #252525; border: 1px solid #555; border-radius: 5px; }
   </style>
 </head>
 <body>
@@ -84,7 +85,7 @@
         <button onclick="openPersonModal()">Добавить человека</button>
         <button onclick="openConnectionModal()">Добавить связь</button>
         <div id="people-list"></div>
-        <div id="connections"></div>
+        <canvas id="connection-canvas"></canvas>
       </div>
     </div>
 
@@ -133,7 +134,8 @@
       </div>
     </div>
 
-    <!-- База знаний -->
+
+ <!-- База знаний -->
     <div class="module collapsed" id="knowledge-module">
       <div class="module-header" onclick="toggleModule('knowledge-module')">
         <h2>📚 База знаний</h2><span>▼</span>
@@ -163,6 +165,7 @@
         <h2>🔍 Аналитика</h2><span>▼</span>
       </div>
       <div class="module-content">
+        <canvas id="analytics-chart"></canvas>
         <div id="analytics-results"></div>
       </div>
     </div>
@@ -186,7 +189,7 @@
       </div>
     </div>
 
- <!-- Справка -->
+    <!-- Справка -->
     <div class="module collapsed" id="help-module">
       <div class="module-header" onclick="toggleModule('help-module')">
         <h2>📚 Справка</h2><span>▼</span>
@@ -203,6 +206,11 @@
       </div>
       <div class="module-content">
         <input type="text" id="strategy-goal" placeholder="Введите цель (например, 'Завершить проект')">
+        <select id="strategy-priority">
+          <option value="low">Низкий</option>
+          <option value="medium">Средний</option>
+          <option value="high">Высокий</option>
+        </select>
         <button onclick="addStrategy()">Добавить</button>
         <ul id="strategy-list"></ul>
       </div>
@@ -339,7 +347,7 @@
       reader.readAsText(file);
     }
 
-    // Правило День
+// Правило День
     let currentRule = JSON.parse(localStorage.getItem('currentRule') || '{}');
     let customRules = JSON.parse(localStorage.getItem('customRules') || '[]');
     const defaultRules = [
@@ -350,7 +358,7 @@
       'Каждое взаимодействие — война за интересы.'
     ];
 
-function updateRule() {
+    function updateRule() {
       const today = new Date().toDateString();
       if (!currentRule.date || currentRule.date !== today) {
         const rule = customRules.length > 0 && Math.random() > 0.5
@@ -443,17 +451,55 @@ function updateRule() {
         `;
         peopleList.appendChild(div);
       });
-      renderConnections();
+      drawConnections();
     }
 
-    function renderConnections() {
-      const connectionsDiv = document.getElementById('connections');
-      connectionsDiv.innerHTML = '';
+    function drawConnections() {
+      const canvas = document.getElementById('connection-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const radius = 10;
+      const padding = 20;
+      const totalPeople = people.length;
+      if (totalPeople === 0) return;
+
+      const angleStep = (2 * Math.PI) / totalPeople;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radiusCircle = Math.min(canvas.width, canvas.height) / 3;
+
+      people.forEach((person, index) => {
+        const angle = index * angleStep;
+        const x = centerX + radiusCircle * Math.cos(angle) - radius;
+        const y = centerY + radiusCircle * Math.sin(angle) - radius;
+        ctx.beginPath();
+        ctx.arc(x + radius, y + radius, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = person.status === 'loyal' ? '#28a745' : person.status === 'hostile' ? '#dc3545' : '#ffc107';
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.fillText(person.name, x + radius * 2, y + radius * 2);
+      });
+
       connections.forEach(conn => {
-        const div = document.createElement('div');
-        div.className = 'connection';
-        div.textContent = `${people[conn.from].name} ↔ ${people[conn.to].name} (Сила: ${conn.strength})`;
-        connectionsDiv.appendChild(div);
+        const from = people[conn.from];
+        const to = people[conn.to];
+        const fromAngle = conn.from * angleStep;
+        const toAngle = conn.to * angleStep;
+        const fromX = centerX + radiusCircle * Math.cos(fromAngle);
+        const fromY = centerY + radiusCircle * Math.sin(fromAngle);
+        const toX = centerX + radiusCircle * Math.cos(toAngle);
+        const toY = centerY + radiusCircle * Math.sin(toAngle);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineWidth = conn.strength;
+        ctx.strokeStyle = '#00ff00';
+        ctx.stroke();
+        ctx.fillStyle = '#00ff00';
+        ctx.fillText(`(${conn.strength})`, (fromX + toX) / 2, (fromY + toY) / 2);
       });
     }
 
@@ -475,6 +521,7 @@ function updateRule() {
         document.getElementById('person-tags').value = '';
         document.getElementById('person-karma').value = '';
         renderPeople();
+        drawConnections();
         closeModal('person-modal');
       } else {
         alert('Введите имя и корректную карму (-100 до +100)');
@@ -485,6 +532,7 @@ function updateRule() {
       people.splice(index, 1);
       localStorage.setItem('people', JSON.stringify(people));
       renderPeople();
+      drawConnections();
     }
 
     function openConnectionModal() {
@@ -499,6 +547,7 @@ function updateRule() {
         connections.push({ from, to, strength });
         localStorage.setItem('connections', JSON.stringify(connections));
         renderConnections();
+        drawConnections();
         closeModal('connection-modal');
       } else {
         alert('Выберите разных людей и укажите силу связи (1-10)');
@@ -517,6 +566,7 @@ function updateRule() {
         financeList.appendChild(li);
       });
       updateFinanceStats();
+      drawAnalyticsChart();
     }
 
     function addTransaction() {
@@ -649,7 +699,7 @@ function updateRule() {
       renderKnowledge();
     }
 
-// Архетипы
+    // Архетипы
     let archetype = JSON.parse(localStorage.getItem('archetype') || '{}');
     const archetypes = { predator: 'Хищник', strategist: 'Стратег', provocateur: 'Провокатор' };
     const questions = [
@@ -679,13 +729,38 @@ function updateRule() {
     }
 
     // Аналитика
+    function drawAnalyticsChart() {
+      const canvas = document.getElementById('analytics-chart');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const incomes = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+      const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+      const totalHeight = canvas.height - 20;
+      const barWidth = (canvas.width - 20) / 2;
+      const maxValue = Math.max(incomes, expenses);
+
+      ctx.fillStyle = '#28a745';
+      ctx.fillRect(10, totalHeight - (incomes / maxValue) * totalHeight, barWidth - 10, (incomes / maxValue) * totalHeight);
+      ctx.fillStyle = '#dc3545';
+      ctx.fillRect(barWidth + 10, totalHeight - (expenses / maxValue) * totalHeight, barWidth - 10, (expenses / maxValue) * totalHeight);
+
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`Доходы: ${incomes}`, 10, 10);
+      ctx.fillText(`Расходы: ${expenses}`, barWidth + 10, 10);
+    }
+
     function accessAnalytics() {
       const totalPlans = plans.length;
       const totalTransactions = transactions.length;
       document.getElementById('analytics-results').textContent = `Задачи: ${totalPlans}, Транзакции: ${totalTransactions}`;
+      drawAnalyticsChart();
     }
 
-    // Настройки
+// Настройки
     function applyState() {
       const state = document.getElementById('state-select').value;
       localStorage.setItem('userState', state);
@@ -699,7 +774,7 @@ function updateRule() {
       strategyList.innerHTML = '';
       strategies.forEach((strategy, index) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span class="${strategy.done ? 'done' : ''}">${strategy.goal}</span> 
+        li.innerHTML = `<span class="${strategy.done ? 'done' : ''}">${strategy.goal} (${strategy.priority})</span> 
           <button onclick="toggleStrategy(${index})">${strategy.done ? 'Вернуть' : 'Сделано'}</button>
           <button onclick="deleteStrategy(${index})">❌</button>`;
         strategyList.appendChild(li);
@@ -708,10 +783,12 @@ function updateRule() {
 
     function addStrategy() {
       const goal = document.getElementById('strategy-goal').value.trim();
+      const priority = document.getElementById('strategy-priority').value;
       if (goal) {
-        strategies.push({ goal, done: false, date: new Date().toISOString() });
+        strategies.push({ goal, priority, done: false, date: new Date().toISOString() });
         localStorage.setItem('strategies', JSON.stringify(strategies));
         document.getElementById('strategy-goal').value = '';
+        document.getElementById('strategy-priority').value = 'low';
         renderStrategies();
       } else {
         alert('Введите цель');
