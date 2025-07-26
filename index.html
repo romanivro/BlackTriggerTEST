@@ -5,27 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>BlackTrigger HQ - 23.07.2025</title>
   <style>
-    body { margin: 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 10px; background: #1a1a1a; color: #e0e0e0; font-family: 'Arial', sans-serif; }
     .container { max-width: 600px; margin: 0 auto; }
     .nav-bar { display: flex; flex-wrap: wrap; justify-content: space-around; background: #222; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
-    .module { border: 1px solid #444; margin: 10px 0; border-radius: 5px; }
-    .module-header { padding: 10px; background: #333; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .module-content { padding: 10px; display: none; }
+    .nav-bar button { flex: 1 1 45%; margin: 5px; }
+    .module { border: 2px solid #555; margin: 10px 0; border-radius: 8px; overflow: hidden; }
+    .module-header { padding: 10px; background: #2c2c2c; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .module-content { padding: 10px; background: #252525; display: none; }
     .module.always-open .module-content { display: block; }
     .module:not(.collapsed) .module-content { display: block; }
-    button { background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px; margin: 5px 0; cursor: pointer; }
+    button { background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 8px; margin: 5px 0; cursor: pointer; transition: background 0.3s; }
     button:hover { background: #0056b3; }
     button.done { background: #28a745; text-decoration: line-through; }
-    input, select, textarea { background: #333; color: #e0e0e0; border: 1px solid #444; padding: 5px; border-radius: 5px; width: 100%; margin: 5px 0; }
-    .error { color: #ff5555; margin: 5px 0; }
+    input, select, textarea { background: #3a3a3a; color: #e0e0e0; border: 1px solid #666; padding: 8px; border-radius: 5px; width: 100%; margin: 5px 0; }
+    .error { color: #ff5555; margin: 5px 0; font-size: 0.9em; }
     ul { list-style: none; padding: 0; }
     li { margin: 5px 0; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-    .modal-content { background: #333; padding: 20px; margin: 10% auto; width: 80%; max-width: 500px; border-radius: 5px; overflow-y: auto; max-height: 80%; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
+    .modal-content { background: #2c2c2c; padding: 20px; margin: 10% auto; width: 80%; max-width: 500px; border-radius: 8px; overflow-y: auto; max-height: 80%; }
     .modal.show { display: block; }
     .person-card { display: flex; align-items: center; margin: 5px 0; }
     .person-card span { margin: 0 5px; }
-    .connection { color: #00ff00; font-size: 0.8em; margin: 5px 0; }
+    .connection { color: #00ff00; font-size: 0.9em; margin: 5px 0; }
+    .archetype-question { margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -149,7 +151,8 @@
         <h2>🧠 Архетипы</h2><span>▼</span>
       </div>
       <div class="module-content">
-        <button onclick="openArchetypeModal()">Пройти тест</button>
+        <div id="archetype-questions"></div>
+        <button id="submit-archetype" onclick="submitArchetype()">Пройти тест</button>
         <div id="archetype-result"></div>
       </div>
     </div>
@@ -164,7 +167,7 @@
       </div>
     </div>
 
- <!-- Настройки -->
+    <!-- Настройки -->
     <div class="module collapsed" id="settings-module">
       <div class="module-header" onclick="toggleModule('settings-module')">
         <h2>⚙️ Настройки</h2><span>▼</span>
@@ -183,7 +186,7 @@
       </div>
     </div>
 
-    <!-- Справка -->
+ <!-- Справка -->
     <div class="module collapsed" id="help-module">
       <div class="module-header" onclick="toggleModule('help-module')">
         <h2>📚 Справка</h2><span>▼</span>
@@ -248,12 +251,8 @@
     <template id="archetype-modal-template">
       <div class="modal-content">
         <h2>Тест архетипа</h2>
-        <select id="archetype-question">
-          <option value="predator">Я действую решительно.</option>
-          <option value="strategist">Я планирую и анализирую.</option>
-          <option value="provocateur">Я провоцирую других.</option>
-        </select>
-        <button onclick="submitArchetype()">Отправить</button>
+        <div id="archetype-questions-modal"></div>
+        <button onclick="submitArchetype()">Пройти тест</button>
         <button onclick="closeModal('archetype-modal')">Закрыть</button>
       </div>
     </template>
@@ -285,6 +284,11 @@
         people.forEach((person, index) => {
           fromSelect.add(new Option(person.name, index));
           toSelect.add(new Option(person.name, index));
+        });
+      } else if (modalId === 'archetype-modal') {
+        const questionsDiv = modal.querySelector('#archetype-questions-modal');
+        questions.forEach((q, idx) => {
+          questionsDiv.innerHTML += `<div class="archetype-question"><label>${q.text}</label><select id="q${idx}"><option value="1">Сильно не согласен</option><option value="2">Не согласен</option><option value="3">Нейтрал</option><option value="4">Согласен</option><option value="5">Сильно согласен</option></select></div>`;
         });
       }
       modal.classList.add('show');
@@ -346,7 +350,7 @@
       'Каждое взаимодействие — война за интересы.'
     ];
 
-    function updateRule() {
+function updateRule() {
       const today = new Date().toDateString();
       if (!currentRule.date || currentRule.date !== today) {
         const rule = customRules.length > 0 && Math.random() > 0.5
@@ -390,7 +394,7 @@
       }
     }
 
-// План на День
+    // План на День
     let plans = JSON.parse(localStorage.getItem('plans') || '[]');
 
     function renderPlans() {
@@ -501,7 +505,7 @@
       }
     }
 
-    // Финансы
+// Финансы
     let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
 
     function renderTransactions() {
@@ -648,17 +652,30 @@
 // Архетипы
     let archetype = JSON.parse(localStorage.getItem('archetype') || '{}');
     const archetypes = { predator: 'Хищник', strategist: 'Стратег', provocateur: 'Провокатор' };
+    const questions = [
+      { text: 'Я действую решительно в сложных ситуациях', type: 'predator' },
+      { text: 'Я люблю планировать и анализировать наперед', type: 'strategist' },
+      { text: 'Я провожу других к действиям через споры', type: 'provocateur' }
+    ];
 
-    function openArchetypeModal() {
-      openModal('archetype-modal-template', 'archetype-modal');
+    function renderArchetypeQuestions() {
+      const questionsDiv = document.getElementById('archetype-questions');
+      questions.forEach((q, idx) => {
+        questionsDiv.innerHTML += `<div class="archetype-question"><label>${q.text}</label><select id="q${idx}"><option value="1">Сильно не согласен</option><option value="2">Не согласен</option><option value="3">Нейтрал</option><option value="4">Согласен</option><option value="5">Сильно согласен</option></select></div>`;
+      });
     }
 
     function submitArchetype() {
-      const result = document.getElementById('archetype-question').value;
-      archetype = { type: result };
+      const scores = {};
+      questions.forEach((q, idx) => {
+        scores[q.type] = (scores[q.type] || 0) + parseInt(document.getElementById(`q${idx}`).value);
+      });
+      const maxScore = Math.max(...Object.values(scores));
+      const resultType = Object.keys(scores).find(type => scores[type] === maxScore);
+      archetype = { type: resultType };
       localStorage.setItem('archetype', JSON.stringify(archetype));
-      document.getElementById('archetype-result').textContent = `Ваш архетип: ${archetypes[result]}`;
-      closeModal('archetype-modal');
+      document.getElementById('archetype-result').textContent = `Ваш архетип: ${archetypes[resultType] || 'Не определён'}`;
+      document.getElementById('submit-archetype').style.display = 'none';
     }
 
     // Аналитика
@@ -722,6 +739,7 @@
       renderHabits();
       renderNotes();
       renderKnowledge();
+      renderArchetypeQuestions();
       renderStrategies();
       if (archetype.type) document.getElementById('archetype-result').textContent = `Ваш архетип: ${archetypes[archetype.type]}`;
       accessAnalytics();
